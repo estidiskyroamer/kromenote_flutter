@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:kromenote_flutter/database/models/models.dart';
 import 'package:kromenote_flutter/pages/home.dart';
 import 'package:kromenote_flutter/pages/note.dart';
+import 'package:realm/realm.dart';
 
-void main() {
+void main() async {
+  late Realm realm;
   runApp(const MyApp());
 }
 
@@ -12,6 +15,7 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+    final config = Configuration.local([Note.schema, Category.schema]);
     return MaterialApp(
       routes: {
         '/': (context) => const HomeScreen(),
