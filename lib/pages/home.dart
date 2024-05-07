@@ -3,6 +3,9 @@ import 'package:flutter/widgets.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:hexcolor/hexcolor.dart';
 import 'package:kromenote_flutter/common/components/styledbutton.dart';
+import 'package:kromenote_flutter/database/models/models.dart';
+import 'package:kromenote_flutter/pages/note.dart';
+import 'package:realm/realm.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,7 +15,29 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  late Realm realm;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
+
+  _HomeScreenState() {
+    final config = Configuration.local([Note.schema, Category.schema]);
+    realm = Realm(config);
+  }
+
+  RealmResults<Note>? notes;
+
+  @override
+  void initState() {
+    super.initState();
+    getNotes();
+  }
+
+  void getNotes() async {
+    setState(() {
+      notes = realm.all<Note>();
+      print('getnote');
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -76,13 +101,54 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-      body: Container(),
+      body: Container(
+        child: notes != null
+            ? ListView.builder(
+                itemCount: notes!.length,
+                itemBuilder: (context, i) {
+                  var note = notes!.elementAt(i);
+                  return GestureDetector(
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => NoteScreen(
+                            existingNote: note,
+                          ),
+                        ),
+                      );
+                      getNotes();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          border: const Border(
+                            top: BorderSide(width: 2.0, color: Colors.black),
+                            left: BorderSide(width: 2.0, color: Colors.black),
+                            right: BorderSide(width: 2.0, color: Colors.black),
+                            bottom: BorderSide(width: 4.0, color: Colors.black),
+                          ),
+                          color: Colors.white),
+                      child: Text(note.title),
+                    ),
+                  );
+                })
+            : const Text("No notes"),
+      ),
       floatingActionButton: StyledButton(
         icon: FontAwesomeIcons.penToSquare,
         size: 36,
         buttonColor: HexColor("#6eb9ff"),
-        onPressed: () {
-          Navigator.pushNamed(context, '/note');
+        onPressed: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => NoteScreen(),
+            ),
+          );
+          getNotes();
         },
       ),
     );
