@@ -8,14 +8,16 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:hexcolor/hexcolor.dart';
 import 'package:intl/intl.dart';
 import 'package:kromenote_flutter/common/components/styledbutton.dart';
+import 'package:kromenote_flutter/common/components/styleddialog.dart';
 import 'package:kromenote_flutter/database/models/models.dart';
 import 'package:mobkit_dashed_border/mobkit_dashed_border.dart';
 import 'package:realm/realm.dart';
 
 class NoteScreen extends StatefulWidget {
-  final Note? existingNote;
+  // final Note? existingNote;
+  final ObjectId? existingNoteId;
 
-  const NoteScreen({super.key, this.existingNote});
+  const NoteScreen({super.key, this.existingNoteId});
 
   @override
   State<NoteScreen> createState() => _NoteScreenState();
@@ -24,48 +26,85 @@ class NoteScreen extends StatefulWidget {
 class _NoteScreenState extends State<NoteScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
   final config = Configuration.local([Note.schema, Category.schema]);
+  late Realm realm;
   final _debouncer = Debouncer();
   Note? _currentNote;
   TextEditingController titleController = TextEditingController();
   FleatherController contentController = FleatherController();
 
+  _NoteScreenState() {
+    final config = Configuration.local([Note.schema, Category.schema]);
+    realm = Realm(config);
+  }
+
   void handleSaveNote() {
-    final realm = Realm(config);
     const duration = Duration(milliseconds: 750);
     _debouncer.debounce(
       duration: duration,
       onDebounce: () {
         final content = jsonEncode(contentController.document);
         final title = titleController.text;
-        if (title.isNotEmpty) {
-          var note = Note(ObjectId(), title,
-              content: content, createdAt: DateTime.now());
-          if (_currentNote != null) {
-            note.id = _currentNote!.id;
-            note.updatedAt = DateTime.now();
-          }
-          if (_currentNote!.title != note.title ||
-              _currentNote!.content != note.content) {
-            realm.write(
-              () {
-                realm.add<Note>(note, update: true);
-                if (mounted) {
-                  setState(() {
-                    _currentNote = note;
-                  });
-                }
-              },
-            );
-          }
-        }
+        if (title.isEmpty) return;
+
+        var note = Note(ObjectId(), title,
+            content: content, createdAt: DateTime.now());
+
+        realm.write(
+          () {
+            realm.add<Note>(note);
+            if (mounted) {
+              setState(() {
+                _currentNote = note;
+              });
+            }
+          },
+        );
       },
     );
   }
 
-  void getCurrentNote() async {
-    if (widget.existingNote != null) {
+  void handleUpdateNote() {
+    const duration = Duration(milliseconds: 750);
+    _debouncer.debounce(
+      duration: duration,
+      onDebounce: () {
+        final content = jsonEncode(contentController.document);
+        final title = titleController.text;
+        if (title.isEmpty) return;
+
+        var note = Note(_currentNote!.id, title,
+            content: content, updatedAt: DateTime.now());
+        realm.write(
+          () {
+            realm.add<Note>(note, update: true);
+            if (mounted) {
+              setState(() {
+                _currentNote = note;
+              });
+            }
+          },
+        );
+      },
+    );
+  }
+
+  void handleDeleteNote() {
+    realm.write(() {
+      realm.delete<Note>(_currentNote!);
+      const duration = Duration(milliseconds: 250);
+      _debouncer.debounce(
+        duration: duration,
+        onDebounce: () {
+          Navigator.of(context).pop();
+        },
+      );
+    });
+  }
+
+  void handleGetNote() async {
+    if (widget.existingNoteId != null) {
       setState(() {
-        _currentNote = widget.existingNote!;
+        _currentNote = realm.find<Note>(widget.existingNoteId);
         final document = loadDocument(_currentNote!.content!);
         contentController = FleatherController(document: document);
       });
@@ -79,9 +118,7 @@ class _NoteScreenState extends State<NoteScreen> {
   @override
   void initState() {
     super.initState();
-    getCurrentNote();
-    titleController.addListener(handleSaveNote);
-    contentController.addListener(handleSaveNote);
+    handleGetNote();
   }
 
   @override
@@ -106,6 +143,20 @@ class _NoteScreenState extends State<NoteScreen> {
             },
           ),
           actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: StyledButton(
+                icon: FontAwesomeIcons.solidFloppyDisk,
+                buttonColor: HexColor("#c2ffac"),
+                onPressed: () {
+                  if (_currentNote != null) {
+                    handleUpdateNote();
+                  } else {
+                    handleSaveNote();
+                  }
+                },
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.only(right: 16),
               child: StyledButton(
@@ -238,33 +289,7 @@ class _NoteScreenState extends State<NoteScreen> {
     );
   }
 
-  Dialog deleteDialog() {
-    return Dialog(
-      shape: const Border(
-        top: BorderSide(width: 2.0, color: Colors.black),
-        left: BorderSide(width: 2.0, color: Colors.black),
-        right: BorderSide(width: 2.0, color: Colors.black),
-        bottom: BorderSide(width: 4.0, color: Colors.black),
-      ),
-      backgroundColor: Colors.white,
-      child: Column(
-        children: [
-          Text("Are you sure you want to delete this note?"),
-          Row(
-            children: [
-              StyledButton(
-                buttonColor: Colors.red,
-                text: "Delete",
-                onPressed: () {},
-              )
-            ],
-          )
-        ],
-      ),
-    );
-  }
-
-  Drawer endDrawer(void deleteNoteFunction) {
+  Drawer endDrawer() {
     return Drawer(
       shape: const ContinuousRectangleBorder(
           side: BorderSide(width: 4.0, color: Colors.black)),
@@ -322,21 +347,19 @@ class _NoteScreenState extends State<NoteScreen> {
                 showDialog(
                     context: context,
                     builder: (BuildContext context) {
-                      return AlertDialog(
-                        actions: [
-                          TextButton(
-                              onPressed: () {
-                                Navigator.pop(context);
-                              },
-                              child: const Text("Cancel")),
-                          StyledButton(
-                              buttonColor: Colors.red,
-                              onPressed: () {},
-                              text: "Delete"),
-                        ],
-                        content: const Text(
-                            "Are you sure you want to delete this note?"),
-                      );
+                      return StyledDialog(
+                          color: HexColor("#ffcaac"),
+                          actionText: "Delete",
+                          cancelText: "Cancel",
+                          dialogText:
+                              "Are you sure you want to delete this note?",
+                          cancelCallback: () {
+                            Navigator.pop(context);
+                          },
+                          actionCallback: () {
+                            Navigator.pop(context);
+                            handleDeleteNote();
+                          });
                     });
               },
               title: const Text("Delete note"),

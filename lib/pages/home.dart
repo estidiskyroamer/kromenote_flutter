@@ -34,12 +34,12 @@ class _HomeScreenState extends State<HomeScreen> {
   void getNotes() async {
     setState(() {
       notes = realm.all<Note>();
-      print('getnote');
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    print(notes);
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
@@ -102,8 +102,10 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       body: Container(
-        child: notes != null
-            ? ListView.builder(
+        padding: const EdgeInsets.all(16),
+        child: notes!.isEmpty
+            ? const Text("No notes")
+            : ListView.builder(
                 itemCount: notes!.length,
                 itemBuilder: (context, i) {
                   var note = notes!.elementAt(i);
@@ -113,7 +115,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => NoteScreen(
-                            existingNote: note,
+                            existingNoteId: note.id,
                           ),
                         ),
                       );
@@ -121,7 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                     child: Container(
                       padding: const EdgeInsets.all(12),
-                      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(10),
                           border: const Border(
@@ -134,8 +136,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Text(note.title),
                     ),
                   );
-                })
-            : const Text("No notes"),
+                }),
       ),
       floatingActionButton: StyledButton(
         icon: FontAwesomeIcons.penToSquare,
@@ -145,7 +146,7 @@ class _HomeScreenState extends State<HomeScreen> {
           await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => NoteScreen(),
+              builder: (context) => const NoteScreen(),
             ),
           );
           getNotes();
