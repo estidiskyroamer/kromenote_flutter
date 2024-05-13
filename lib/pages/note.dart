@@ -7,6 +7,7 @@ import 'package:flutter_debouncer/flutter_debouncer.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:hexcolor/hexcolor.dart';
 import 'package:intl/intl.dart';
+import 'package:kromenote_flutter/common/components/editortoolbar.dart';
 import 'package:kromenote_flutter/common/components/styledbutton.dart';
 import 'package:kromenote_flutter/common/components/styleddialog.dart';
 import 'package:kromenote_flutter/database/models/models.dart';
@@ -31,10 +32,32 @@ class _NoteScreenState extends State<NoteScreen> {
   Note? _currentNote;
   TextEditingController titleController = TextEditingController();
   FleatherController contentController = FleatherController();
+  bool isChanged = false;
 
   _NoteScreenState() {
     final config = Configuration.local([Note.schema, Category.schema]);
     realm = Realm(config);
+  }
+
+  void checkChangedState() {
+    final content = jsonEncode(contentController.document);
+    final title = titleController.text;
+    if (mounted) {
+      setState(() {
+        isChanged = false;
+      });
+    }
+    if ((_currentNote != null &&
+            (_currentNote!.title != title ||
+                _currentNote!.content != content)) ||
+        _currentNote == null &&
+            (content != '[{"insert":"\\n"}]' || title.isNotEmpty)) {
+      if (mounted) {
+        setState(() {
+          isChanged = true;
+        });
+      }
+    }
   }
 
   void handleSaveNote() {
@@ -48,38 +71,20 @@ class _NoteScreenState extends State<NoteScreen> {
 
         var note = Note(ObjectId(), title,
             content: content, createdAt: DateTime.now());
+        if (_currentNote != null) {
+          note = Note(_currentNote!.id, title,
+              content: content,
+              createdAt: _currentNote!.createdAt,
+              updatedAt: DateTime.now());
+        }
 
-        realm.write(
-          () {
-            realm.add<Note>(note);
-            if (mounted) {
-              setState(() {
-                _currentNote = note;
-              });
-            }
-          },
-        );
-      },
-    );
-  }
-
-  void handleUpdateNote() {
-    const duration = Duration(milliseconds: 750);
-    _debouncer.debounce(
-      duration: duration,
-      onDebounce: () {
-        final content = jsonEncode(contentController.document);
-        final title = titleController.text;
-        if (title.isEmpty) return;
-
-        var note = Note(_currentNote!.id, title,
-            content: content, updatedAt: DateTime.now());
         realm.write(
           () {
             realm.add<Note>(note, update: true);
             if (mounted) {
               setState(() {
                 _currentNote = note;
+                isChanged = false;
               });
             }
           },
@@ -107,6 +112,7 @@ class _NoteScreenState extends State<NoteScreen> {
         _currentNote = realm.find<Note>(widget.existingNoteId);
         final document = loadDocument(_currentNote!.content!);
         contentController = FleatherController(document: document);
+        titleController.text = _currentNote!.title;
       });
     }
   }
@@ -119,6 +125,9 @@ class _NoteScreenState extends State<NoteScreen> {
   void initState() {
     super.initState();
     handleGetNote();
+
+    contentController.addListener(checkChangedState);
+    titleController.addListener(checkChangedState);
   }
 
   @override
@@ -130,7 +139,6 @@ class _NoteScreenState extends State<NoteScreen> {
 
   @override
   Widget build(BuildContext context) {
-    titleController.text = _currentNote != null ? _currentNote!.title : '';
     return Scaffold(
         key: _scaffoldKey,
         appBar: AppBar(
@@ -139,24 +147,44 @@ class _NoteScreenState extends State<NoteScreen> {
             icon: FontAwesomeIcons.arrowLeft,
             buttonColor: HexColor("#d9d9d9"),
             onPressed: () {
-              Navigator.of(context).pop();
+              if (isChanged) {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return StyledDialog(
+                      actionCallback: () {
+                        Navigator.pop(context);
+                      },
+                      cancelCallback: () {
+                        Navigator.pop(context);
+                        Navigator.of(context).pop();
+                      },
+                      actionText: "Continue editing",
+                      cancelText: "Leave",
+                      color: HexColor("#ffcaac"),
+                      dialogText:
+                          "Are you sure you want to leave? Unsaved changes will be lost.",
+                    );
+                  },
+                );
+              } else {
+                Navigator.of(context).pop();
+              }
             },
           ),
           actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: StyledButton(
-                icon: FontAwesomeIcons.solidFloppyDisk,
-                buttonColor: HexColor("#c2ffac"),
-                onPressed: () {
-                  if (_currentNote != null) {
-                    handleUpdateNote();
-                  } else {
-                    handleSaveNote();
-                  }
-                },
-              ),
-            ),
+            isChanged
+                ? Padding(
+                    padding: const EdgeInsets.only(right: 16),
+                    child: StyledButton(
+                      icon: FontAwesomeIcons.solidFloppyDisk,
+                      buttonColor: HexColor("#c2ffac"),
+                      onPressed: () {
+                        handleSaveNote();
+                      },
+                    ),
+                  )
+                : const SizedBox(),
             Padding(
               padding: const EdgeInsets.only(right: 16),
               child: StyledButton(
@@ -206,87 +234,9 @@ class _NoteScreenState extends State<NoteScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
               ),
             ),
-            editorToolbar(),
+            editorToolbar(contentController),
           ],
         ));
-  }
-
-  Container editorToolbar() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      margin: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        border: const Border(
-          top: BorderSide(width: 2.0, color: Colors.black),
-          left: BorderSide(width: 2.0, color: Colors.black),
-          right: BorderSide(width: 2.0, color: Colors.black),
-          bottom: BorderSide(width: 4.0, color: Colors.black),
-        ),
-        color: HexColor("#6eb9ff"),
-      ),
-      child: Wrap(
-        alignment: WrapAlignment.spaceEvenly,
-        children: [
-          ToggleStyleButton(
-            attribute: ParchmentAttribute.bold,
-            icon: FontAwesomeIcons.bold,
-            controller: contentController,
-          ),
-          ToggleStyleButton(
-            attribute: ParchmentAttribute.italic,
-            icon: FontAwesomeIcons.italic,
-            controller: contentController,
-          ),
-          ToggleStyleButton(
-            attribute: ParchmentAttribute.underline,
-            icon: FontAwesomeIcons.underline,
-            controller: contentController,
-          ),
-          ToggleStyleButton(
-            attribute: ParchmentAttribute.strikethrough,
-            icon: FontAwesomeIcons.strikethrough,
-            controller: contentController,
-          ),
-          const Padding(
-            padding: EdgeInsets.only(left: 6, right: 6),
-          ),
-          ToggleStyleButton(
-            attribute: ParchmentAttribute.left,
-            icon: FontAwesomeIcons.alignLeft,
-            controller: contentController,
-          ),
-          ToggleStyleButton(
-            attribute: ParchmentAttribute.right,
-            icon: FontAwesomeIcons.alignRight,
-            controller: contentController,
-          ),
-          ToggleStyleButton(
-            attribute: ParchmentAttribute.center,
-            icon: FontAwesomeIcons.alignCenter,
-            controller: contentController,
-          ),
-          ToggleStyleButton(
-            attribute: ParchmentAttribute.justify,
-            icon: FontAwesomeIcons.alignJustify,
-            controller: contentController,
-          ),
-          const Padding(
-            padding: EdgeInsets.only(left: 6, right: 6),
-          ),
-          ToggleStyleButton(
-            attribute: ParchmentAttribute.ol,
-            icon: FontAwesomeIcons.listOl,
-            controller: contentController,
-          ),
-          ToggleStyleButton(
-            attribute: ParchmentAttribute.ul,
-            icon: FontAwesomeIcons.listUl,
-            controller: contentController,
-          ),
-        ],
-      ),
-    );
   }
 
   Drawer endDrawer() {
