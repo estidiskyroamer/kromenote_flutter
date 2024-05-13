@@ -39,21 +39,18 @@ class StyledButton extends StatelessWidget {
           color: buttonColor),
       child: TextButton(
         onPressed: onPressed,
-        child: Padding(
-          padding: EdgeInsets.all(size / 6),
-          child: icon != null
-              ? FaIcon(
-                  icon!,
-                  size: size,
-                  color: textColor,
-                )
-              : text != null
-                  ? Text(
-                      text!,
-                      style: TextStyle(color: textColor),
-                    )
-                  : const Text(""),
-        ),
+        child: icon != null
+            ? FaIcon(
+                icon!,
+                size: size,
+                color: textColor,
+              )
+            : text != null
+                ? Text(
+                    text!,
+                    style: TextStyle(color: textColor),
+                  )
+                : const Text(""),
       ),
     );
   }

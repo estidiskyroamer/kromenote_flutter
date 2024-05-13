@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:hexcolor/hexcolor.dart';
-import 'package:kromenote_flutter/database/models/models.dart';
 import 'package:kromenote_flutter/pages/home.dart';
-import 'package:kromenote_flutter/pages/note.dart';
-import 'package:realm/realm.dart';
 
 void main() async {
   runApp(const MyApp());

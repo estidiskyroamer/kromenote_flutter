@@ -1,10 +1,14 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:hexcolor/hexcolor.dart';
+import 'package:intl/intl.dart';
+import 'package:kromenote_flutter/common/components/addcategorydialog.dart';
 import 'package:kromenote_flutter/common/components/styledbutton.dart';
 import 'package:kromenote_flutter/database/models/models.dart';
 import 'package:kromenote_flutter/pages/note.dart';
+import 'package:mobkit_dashed_border/mobkit_dashed_border.dart';
 import 'package:realm/realm.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -24,10 +28,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   RealmResults<Note>? notes;
+  RealmResults<Category>? categories;
 
   @override
   void initState() {
     super.initState();
+    getCategories();
     getNotes();
   }
 
@@ -37,9 +43,15 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void getCategories() async {
+    setState(() {
+      categories = realm.all<Category>();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    print(notes);
+    print(categories);
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
@@ -85,7 +97,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               ListTile(
-                onTap: () {},
+                onTap: () {
+                  _scaffoldKey.currentState!.closeEndDrawer();
+                  showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return const AddCategoryDialog();
+                      });
+                  setState(() {});
+                },
                 title: const Text("New category"),
               ),
               ListTile(
@@ -101,42 +121,84 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-      body: Container(
-        padding: const EdgeInsets.all(16),
-        child: notes!.isEmpty
-            ? const Text("No notes")
-            : ListView.builder(
-                itemCount: notes!.length,
-                itemBuilder: (context, i) {
-                  var note = notes!.elementAt(i);
-                  return GestureDetector(
-                    onTap: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => NoteScreen(
-                            existingNoteId: note.id,
+      body: Column(
+        children: [
+          Container(
+            width: MediaQuery.of(context).size.width,
+            height: 48,
+            margin: const EdgeInsets.fromLTRB(16, 16, 0, 16),
+            child: categories!.isEmpty
+                ? const SizedBox()
+                : ListView.builder(
+                    reverse: true,
+                    scrollDirection: Axis.horizontal,
+                    shrinkWrap: true,
+                    itemCount: categories!.length,
+                    itemBuilder: (context, i) {
+                      var category = categories!.elementAt(i);
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 6.0),
+                        child: StyledButton(
+                            buttonColor: HexColor(category.color),
+                            text: category.name,
+                            onPressed: () {}),
+                      );
+                    }),
+          ),
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: notes!.isEmpty
+                ? const Text("No notes")
+                : ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: notes!.length,
+                    itemBuilder: (context, i) {
+                      var note = notes!.elementAt(i);
+                      return GestureDetector(
+                        onTap: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => NoteScreen(
+                                existingNoteId: note.id,
+                              ),
+                            ),
+                          );
+                          getNotes();
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              border: const Border(
+                                top:
+                                    BorderSide(width: 2.0, color: Colors.black),
+                                left:
+                                    BorderSide(width: 2.0, color: Colors.black),
+                                right:
+                                    BorderSide(width: 2.0, color: Colors.black),
+                                bottom:
+                                    BorderSide(width: 4.0, color: Colors.black),
+                              ),
+                              color: Colors.white),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(note.title),
+                              note.updatedAt != null
+                                  ? Text(DateFormat('dd MMM yyyy, HH:mm')
+                                      .format(note.updatedAt!))
+                                  : Text(DateFormat('dd MMM yyyy, HH:mm')
+                                      .format(note.createdAt!))
+                            ],
                           ),
                         ),
                       );
-                      getNotes();
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          border: const Border(
-                            top: BorderSide(width: 2.0, color: Colors.black),
-                            left: BorderSide(width: 2.0, color: Colors.black),
-                            right: BorderSide(width: 2.0, color: Colors.black),
-                            bottom: BorderSide(width: 4.0, color: Colors.black),
-                          ),
-                          color: Colors.white),
-                      child: Text(note.title),
-                    ),
-                  );
-                }),
+                    }),
+          ),
+        ],
       ),
       floatingActionButton: StyledButton(
         icon: FontAwesomeIcons.penToSquare,
