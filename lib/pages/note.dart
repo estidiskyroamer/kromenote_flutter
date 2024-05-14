@@ -262,15 +262,6 @@ class _NoteScreenState extends State<NoteScreen> {
                               "Created at ${DateFormat('dd MMM yyyy, HH:mm:ss').format(_currentNote!.createdAt!)}")
                           : Container(),
                 ),
-                Container(
-                  margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  child: _currentNote != null && _currentNote!.category != null
-                      ? Text(
-                          _currentNote!.category!.name,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        )
-                      : Container(),
-                ),
               ],
             ),
             Expanded(
@@ -339,7 +330,10 @@ class _NoteScreenState extends State<NoteScreen> {
                       themeColor = _currentNote!.category!.color;
                     }));
               },
-              title: const Text("Set category"),
+              title: _currentNote != null && _currentNote!.category != null
+                  ? Text(
+                      "Set category (current: ${_currentNote!.category!.name})")
+                  : const Text("Set category"),
             ),
             _currentNote != null && _currentNote!.category != null
                 ? ListTile(
