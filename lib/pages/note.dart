@@ -8,6 +8,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:hexcolor/hexcolor.dart';
 import 'package:intl/intl.dart';
 import 'package:kromenote_flutter/common/components/editortoolbar.dart';
+import 'package:kromenote_flutter/common/components/setcategorydialog.dart';
 import 'package:kromenote_flutter/common/components/styledbutton.dart';
 import 'package:kromenote_flutter/common/components/styleddialog.dart';
 import 'package:kromenote_flutter/database/models/models.dart';
@@ -32,6 +33,7 @@ class _NoteScreenState extends State<NoteScreen> {
   Note? _currentNote;
   TextEditingController titleController = TextEditingController();
   FleatherController contentController = FleatherController();
+  String themeColor = '#ffffff';
   bool isChanged = false;
 
   _NoteScreenState() {
@@ -106,10 +108,28 @@ class _NoteScreenState extends State<NoteScreen> {
     });
   }
 
+  void handleRemoveCategory() {
+    realm.write(() {
+      _currentNote!.category = null;
+      _currentNote!.updatedAt = DateTime.now();
+      setState(() {});
+      const duration = Duration(milliseconds: 250);
+      _debouncer.debounce(
+        duration: duration,
+        onDebounce: () {
+          Navigator.of(context).pop();
+        },
+      );
+    });
+  }
+
   void handleGetNote() async {
     if (widget.existingNoteId != null) {
       setState(() {
         _currentNote = realm.find<Note>(widget.existingNoteId);
+        if (_currentNote!.category != null) {
+          themeColor = _currentNote!.category!.color;
+        }
         final document = loadDocument(_currentNote!.content!);
         contentController = FleatherController(document: document);
         titleController.text = _currentNote!.title;
@@ -143,6 +163,18 @@ class _NoteScreenState extends State<NoteScreen> {
         key: _scaffoldKey,
         appBar: AppBar(
           automaticallyImplyLeading: false,
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: <Color>[
+                  HexColor(themeColor),
+                  HexColor(themeColor).withOpacity(0)
+                ],
+              ),
+            ),
+          ),
           title: StyledButton(
             icon: FontAwesomeIcons.arrowLeft,
             buttonColor: HexColor("#d9d9d9"),
@@ -152,6 +184,7 @@ class _NoteScreenState extends State<NoteScreen> {
                   context: context,
                   builder: (BuildContext context) {
                     return StyledDialog(
+                      title: "Unsaved changes",
                       actionCallback: () {
                         Navigator.pop(context);
                       },
@@ -185,16 +218,18 @@ class _NoteScreenState extends State<NoteScreen> {
                     ),
                   )
                 : const SizedBox(),
-            Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: StyledButton(
-                icon: FontAwesomeIcons.wrench,
-                buttonColor: HexColor("#d9d9d9"),
-                onPressed: () {
-                  _scaffoldKey.currentState!.openEndDrawer();
-                },
-              ),
-            ),
+            _currentNote != null
+                ? Padding(
+                    padding: const EdgeInsets.only(right: 16),
+                    child: StyledButton(
+                      icon: FontAwesomeIcons.wrench,
+                      buttonColor: HexColor("#d9d9d9"),
+                      onPressed: () {
+                        _scaffoldKey.currentState!.openEndDrawer();
+                      },
+                    ),
+                  )
+                : const SizedBox(),
           ],
         ),
         endDrawer: endDrawer(),
@@ -215,6 +250,7 @@ class _NoteScreenState extends State<NoteScreen> {
               ),
             ),
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
                   margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -226,6 +262,15 @@ class _NoteScreenState extends State<NoteScreen> {
                               "Created at ${DateFormat('dd MMM yyyy, HH:mm:ss').format(_currentNote!.createdAt!)}")
                           : Container(),
                 ),
+                Container(
+                  margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: _currentNote != null && _currentNote!.category != null
+                      ? Text(
+                          _currentNote!.category!.name,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        )
+                      : Container(),
+                ),
               ],
             ),
             Expanded(
@@ -234,7 +279,7 @@ class _NoteScreenState extends State<NoteScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
               ),
             ),
-            editorToolbar(contentController),
+            editorToolbar(contentController, themeColor),
           ],
         ));
   }
@@ -283,34 +328,71 @@ class _NoteScreenState extends State<NoteScreen> {
               ),
             ),
             ListTile(
-              onTap: () {},
-              title: const Text("Set category"),
-            ),
-            ListTile(
-              onTap: () {},
-              title: const Text("Remove category"),
-            ),
-            const Padding(padding: EdgeInsets.all(12)),
-            ListTile(
               onTap: () {
                 _scaffoldKey.currentState!.closeEndDrawer();
                 showDialog(
                     context: context,
                     builder: (BuildContext context) {
-                      return StyledDialog(
-                          color: HexColor("#ffcaac"),
-                          actionText: "Delete",
-                          cancelText: "Cancel",
-                          dialogText:
-                              "Are you sure you want to delete this note?",
-                          cancelCallback: () {
-                            Navigator.pop(context);
-                          },
-                          actionCallback: () {
-                            Navigator.pop(context);
-                            handleDeleteNote();
-                          });
-                    });
+                      return SetCategoryDialog(
+                          existingNoteId: _currentNote!.id);
+                    }).then((value) => setState(() {
+                      themeColor = _currentNote!.category!.color;
+                    }));
+              },
+              title: const Text("Set category"),
+            ),
+            _currentNote != null && _currentNote!.category != null
+                ? ListTile(
+                    onTap: () {
+                      _scaffoldKey.currentState!.closeEndDrawer();
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return StyledDialog(
+                            title: "Remove category",
+                            actionCallback: () {
+                              handleRemoveCategory();
+                            },
+                            cancelCallback: () {
+                              Navigator.pop(context);
+                            },
+                            actionText: "Remove",
+                            cancelText: "Cancel",
+                            color: HexColor("#ffcaac"),
+                            dialogText:
+                                "Are you sure you want to remove the category?",
+                          );
+                        },
+                      ).then((value) => setState(() {
+                            themeColor = "#ffffff";
+                          }));
+                    },
+                    title: const Text("Remove category"),
+                  )
+                : const SizedBox(),
+            const Padding(padding: EdgeInsets.all(12)),
+            ListTile(
+              onTap: () {
+                _scaffoldKey.currentState!.closeEndDrawer();
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return StyledDialog(
+                      title: "Delete note",
+                      color: HexColor("#ffcaac"),
+                      actionText: "Delete",
+                      cancelText: "Cancel",
+                      dialogText: "Are you sure you want to delete this note?",
+                      cancelCallback: () {
+                        Navigator.pop(context);
+                      },
+                      actionCallback: () {
+                        Navigator.pop(context);
+                        handleDeleteNote();
+                      },
+                    );
+                  },
+                );
               },
               title: const Text("Delete note"),
             ),

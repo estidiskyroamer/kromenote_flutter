@@ -5,6 +5,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:hexcolor/hexcolor.dart';
 import 'package:intl/intl.dart';
 import 'package:kromenote_flutter/common/components/addcategorydialog.dart';
+import 'package:kromenote_flutter/common/components/deletecategorydialog.dart';
 import 'package:kromenote_flutter/common/components/styledbutton.dart';
 import 'package:kromenote_flutter/database/models/models.dart';
 import 'package:kromenote_flutter/pages/note.dart';
@@ -51,12 +52,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    print(categories);
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text("KromeNotes"),
+        title: const Text("KromeNote"),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
@@ -103,15 +103,23 @@ class _HomeScreenState extends State<HomeScreen> {
                       context: context,
                       builder: (BuildContext context) {
                         return const AddCategoryDialog();
-                      });
-                  setState(() {});
+                      }).then((value) => setState(() {}));
                 },
-                title: const Text("New category"),
+                title: const Text("Add category"),
               ),
-              ListTile(
-                onTap: () {},
-                title: const Text("Delete category"),
-              ),
+              categories!.isEmpty
+                  ? const SizedBox()
+                  : ListTile(
+                      onTap: () {
+                        _scaffoldKey.currentState!.closeEndDrawer();
+                        showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return const DeleteCategoryDialog();
+                            }).then((value) => setState(() {}));
+                      },
+                      title: const Text("Delete category"),
+                    ),
               const Padding(padding: EdgeInsets.all(12)),
               ListTile(
                 onTap: () {},
@@ -123,28 +131,27 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: Column(
         children: [
-          Container(
-            width: MediaQuery.of(context).size.width,
-            height: 48,
-            margin: const EdgeInsets.fromLTRB(16, 16, 0, 16),
-            child: categories!.isEmpty
-                ? const SizedBox()
-                : ListView.builder(
-                    reverse: true,
-                    scrollDirection: Axis.horizontal,
-                    shrinkWrap: true,
-                    itemCount: categories!.length,
-                    itemBuilder: (context, i) {
-                      var category = categories!.elementAt(i);
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 6.0),
-                        child: StyledButton(
-                            buttonColor: HexColor(category.color),
-                            text: category.name,
-                            onPressed: () {}),
-                      );
-                    }),
-          ),
+          categories!.isEmpty
+              ? const SizedBox()
+              : Container(
+                  width: MediaQuery.of(context).size.width,
+                  height: 48,
+                  margin: const EdgeInsets.fromLTRB(16, 16, 0, 16),
+                  child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      shrinkWrap: true,
+                      itemCount: categories!.length,
+                      itemBuilder: (context, i) {
+                        var category = categories!.elementAt(i);
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 6.0),
+                          child: StyledButton(
+                              buttonColor: HexColor(category.color),
+                              text: category.name,
+                              onPressed: () {}),
+                        );
+                      }),
+                ),
           SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: notes!.isEmpty
@@ -182,7 +189,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 bottom:
                                     BorderSide(width: 4.0, color: Colors.black),
                               ),
-                              color: Colors.white),
+                              color: note.category != null
+                                  ? HexColor(note.category!.color)
+                                  : Colors.white),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -201,7 +210,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       floatingActionButton: StyledButton(
-        icon: FontAwesomeIcons.penToSquare,
+        icon: FontAwesomeIcons.plus,
         size: 36,
         buttonColor: HexColor("#6eb9ff"),
         onPressed: () async {

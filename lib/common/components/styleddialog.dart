@@ -3,6 +3,7 @@ import 'package:kromenote_flutter/common/components/styledbutton.dart';
 
 class StyledDialog extends StatelessWidget {
   final Color color;
+  final String title;
   final String actionText;
   final String cancelText;
   final String dialogText;
@@ -12,6 +13,7 @@ class StyledDialog extends StatelessWidget {
   const StyledDialog(
       {super.key,
       required this.color,
+      required this.title,
       required this.actionText,
       required this.cancelText,
       required this.dialogText,
@@ -34,6 +36,7 @@ class StyledDialog extends StatelessWidget {
             buttonColor: color, onPressed: actionCallback, text: actionText),
       ],
       content: Text(dialogText),
+      title: Text(title),
     );
   }
 }

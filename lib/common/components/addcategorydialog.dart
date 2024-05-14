@@ -17,12 +17,37 @@ class AddCategoryDialog extends StatefulWidget {
 
 class _AddCategoryDialogState extends State<AddCategoryDialog> {
   List<String> colorList = [
-    "#ffcccc", "#ffb3b3", "#ff9999", "#ff8080", "#ff6666", "#ff4d4d", // Red
-    "#ffd9b3", "#ffcc99", "#ffbf80", "#ffb266", "#ff9933", "#ff8000", // Orange
-    "#ffffb3", "#ffff99", "#ffff80", "#ffff66", "#ffff4d", "#ffff33", // Yellow
-    "#b3ffb3", "#99ff99", "#80ff80", "#66ff66", "#4dff4d", "#33ff33", // Green
-    "#b3b3ff", "#9999ff", "#8080ff", "#6666ff", "#4d4dff", "#3333ff", // Blue
-    "#ffffff", "#f2f2f2", "#e6e6e6", "#d9d9d9", "#cccccc", "#bfbfbf" // White
+    // Very Light
+    "#FFE5B4", // Light Peach
+    "#FFFACD", // Light Lemon
+    "#F0F8FF", // Alice Blue
+    "#F5F5F5", // White Smoke
+    "#E6E6FA", // Light Lavender
+    "#E0FFFF", // Light Cyan
+
+    // Pastel
+    "#FFDAB9", // Pastel Peach
+    "#FFFFE0", // Pastel Yellow
+    "#B0E0E6", // Pastel Powder Blue
+    "#D8BFD8", // Pastel Thistle
+    "#98FB98", // Pastel Mint Green
+    "#AFEEEE", // Pastel Turquoise
+
+    // Pale
+    "#FFE4B5", // Pale Moccasin
+    "#FFFFE0", // Pale Yellow
+    "#E6E6FA", // Pale Lavender
+    "#DB7093", // Pale Violet Red
+    "#98FB98", // Pale Green
+    "#D3D3D3", // Pale Light Gray
+
+    // Vibrant
+    "#FF69B4", // Hot Pink
+    "#FFA500", // Orange
+    "#FFD700", // Gold
+    "#00FF00", // Lime
+    "#00BFFF", // Deep Sky Blue
+    "#FF0000" // Red
   ];
   String selectedColor = '#ffffff';
 
@@ -55,6 +80,7 @@ class _AddCategoryDialogState extends State<AddCategoryDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      title: const Text("Add New Category"),
       backgroundColor: Colors.white,
       shape: const Border(
         top: BorderSide(width: 2.0, color: Colors.black),
