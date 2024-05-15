@@ -2,6 +2,7 @@ import 'package:fleather/fleather.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:hexcolor/hexcolor.dart';
+import 'package:kromenote_flutter/common/components/blockshadowborder.dart';
 
 Container editorToolbar(FleatherController controller, String color) {
   return Container(
@@ -9,12 +10,7 @@ Container editorToolbar(FleatherController controller, String color) {
     margin: const EdgeInsets.all(16),
     decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(10),
-      border: const Border(
-        top: BorderSide(width: 2.0, color: Colors.black),
-        left: BorderSide(width: 2.0, color: Colors.black),
-        right: BorderSide(width: 2.0, color: Colors.black),
-        bottom: BorderSide(width: 4.0, color: Colors.black),
-      ),
+      border: blockShadowBorder(6.0),
       color: HexColor(color),
     ),
     child: Wrap(

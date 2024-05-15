@@ -1,10 +1,9 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:hexcolor/hexcolor.dart';
 import 'package:intl/intl.dart';
 import 'package:kromenote_flutter/common/components/addcategorydialog.dart';
+import 'package:kromenote_flutter/common/components/blockshadowborder.dart';
 import 'package:kromenote_flutter/common/components/deletecategorydialog.dart';
 import 'package:kromenote_flutter/common/components/styledbutton.dart';
 import 'package:kromenote_flutter/database/models/models.dart';
@@ -24,7 +23,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
 
   _HomeScreenState() {
-    final config = Configuration.local([Note.schema, Category.schema]);
+    final config =
+        Configuration.local([Note.schema, Category.schema], schemaVersion: 1);
     realm = Realm(config);
   }
 
@@ -70,65 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      endDrawer: Drawer(
-        shape: const ContinuousRectangleBorder(
-            side: BorderSide(width: 4.0, color: Colors.black)),
-        elevation: 0,
-        child: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.only(right: 16),
-                alignment: Alignment.centerRight,
-                child: StyledButton(
-                  icon: FontAwesomeIcons.arrowLeft,
-                  buttonColor: HexColor("#d9d9d9"),
-                  onPressed: () {
-                    _scaffoldKey.currentState!.closeEndDrawer();
-                  },
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
-                child: const Text(
-                  "Category",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
-                ),
-              ),
-              ListTile(
-                onTap: () {
-                  _scaffoldKey.currentState!.closeEndDrawer();
-                  showDialog(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return const AddCategoryDialog();
-                      }).then((value) => setState(() {}));
-                },
-                title: const Text("Add category"),
-              ),
-              categories!.isEmpty
-                  ? const SizedBox()
-                  : ListTile(
-                      onTap: () {
-                        _scaffoldKey.currentState!.closeEndDrawer();
-                        showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return const DeleteCategoryDialog();
-                            }).then((value) => setState(() {}));
-                      },
-                      title: const Text("Delete category"),
-                    ),
-              const Padding(padding: EdgeInsets.all(12)),
-              ListTile(
-                onTap: () {},
-                title: const Text("Privacy policy"),
-              ),
-            ],
-          ),
-        ),
-      ),
+      endDrawer: endDrawer(),
       body: Column(
         children: [
           categories!.isEmpty
@@ -176,19 +118,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         },
                         child: Container(
                           padding: const EdgeInsets.all(12),
-                          margin: const EdgeInsets.only(bottom: 16),
+                          margin: const EdgeInsets.only(bottom: 12),
                           decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(10),
-                              border: const Border(
-                                top:
-                                    BorderSide(width: 2.0, color: Colors.black),
-                                left:
-                                    BorderSide(width: 2.0, color: Colors.black),
-                                right:
-                                    BorderSide(width: 2.0, color: Colors.black),
-                                bottom:
-                                    BorderSide(width: 4.0, color: Colors.black),
-                              ),
+                              border: blockShadowBorder(4.0),
                               color: note.category != null
                                   ? HexColor(note.category!.color)
                                   : Colors.white),
@@ -222,6 +155,68 @@ class _HomeScreenState extends State<HomeScreen> {
           );
           getNotes();
         },
+      ),
+    );
+  }
+
+  Drawer endDrawer() {
+    return Drawer(
+      shape: const ContinuousRectangleBorder(
+          side: BorderSide(width: 4.0, color: Colors.black)),
+      elevation: 0,
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.only(right: 16),
+              alignment: Alignment.centerRight,
+              child: StyledButton(
+                icon: FontAwesomeIcons.arrowLeft,
+                buttonColor: HexColor("#d9d9d9"),
+                onPressed: () {
+                  _scaffoldKey.currentState!.closeEndDrawer();
+                },
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+              child: const Text(
+                "Category",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+              ),
+            ),
+            ListTile(
+              onTap: () {
+                _scaffoldKey.currentState!.closeEndDrawer();
+                showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return const AddCategoryDialog();
+                    }).then((value) => setState(() {}));
+              },
+              title: const Text("Add category"),
+            ),
+            categories!.isEmpty
+                ? const SizedBox()
+                : ListTile(
+                    onTap: () {
+                      _scaffoldKey.currentState!.closeEndDrawer();
+                      showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return const DeleteCategoryDialog();
+                          }).then((value) => setState(() {}));
+                    },
+                    title: const Text("Delete category"),
+                  ),
+            const Padding(padding: EdgeInsets.all(12)),
+            ListTile(
+              onTap: () {},
+              title: const Text("Privacy policy"),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -117,6 +117,7 @@ class Note extends _Note with RealmEntity, RealmObjectBase, RealmObject {
     ObjectId id,
     String title, {
     String? content,
+    String? password,
     DateTime? updatedAt,
     DateTime? createdAt,
     Category? category,
@@ -124,6 +125,7 @@ class Note extends _Note with RealmEntity, RealmObjectBase, RealmObject {
     RealmObjectBase.set(this, 'id', id);
     RealmObjectBase.set(this, 'title', title);
     RealmObjectBase.set(this, 'content', content);
+    RealmObjectBase.set(this, 'password', password);
     RealmObjectBase.set(this, 'updatedAt', updatedAt);
     RealmObjectBase.set(this, 'createdAt', createdAt);
     RealmObjectBase.set(this, 'category', category);
@@ -146,6 +148,12 @@ class Note extends _Note with RealmEntity, RealmObjectBase, RealmObject {
       RealmObjectBase.get<String>(this, 'content') as String?;
   @override
   set content(String? value) => RealmObjectBase.set(this, 'content', value);
+
+  @override
+  String? get password =>
+      RealmObjectBase.get<String>(this, 'password') as String?;
+  @override
+  set password(String? value) => RealmObjectBase.set(this, 'password', value);
 
   @override
   DateTime? get updatedAt =>
@@ -184,6 +192,7 @@ class Note extends _Note with RealmEntity, RealmObjectBase, RealmObject {
       'id': id.toEJson(),
       'title': title.toEJson(),
       'content': content.toEJson(),
+      'password': password.toEJson(),
       'updatedAt': updatedAt.toEJson(),
       'createdAt': createdAt.toEJson(),
       'category': category.toEJson(),
@@ -197,6 +206,7 @@ class Note extends _Note with RealmEntity, RealmObjectBase, RealmObject {
         'id': EJsonValue id,
         'title': EJsonValue title,
         'content': EJsonValue content,
+        'password': EJsonValue password,
         'updatedAt': EJsonValue updatedAt,
         'createdAt': EJsonValue createdAt,
         'category': EJsonValue category,
@@ -205,6 +215,7 @@ class Note extends _Note with RealmEntity, RealmObjectBase, RealmObject {
           fromEJson(id),
           fromEJson(title),
           content: fromEJson(content),
+          password: fromEJson(password),
           updatedAt: fromEJson(updatedAt),
           createdAt: fromEJson(createdAt),
           category: fromEJson(category),
@@ -220,6 +231,7 @@ class Note extends _Note with RealmEntity, RealmObjectBase, RealmObject {
       SchemaProperty('id', RealmPropertyType.objectid, primaryKey: true),
       SchemaProperty('title', RealmPropertyType.string),
       SchemaProperty('content', RealmPropertyType.string, optional: true),
+      SchemaProperty('password', RealmPropertyType.string, optional: true),
       SchemaProperty('updatedAt', RealmPropertyType.timestamp, optional: true),
       SchemaProperty('createdAt', RealmPropertyType.timestamp, optional: true),
       SchemaProperty('category', RealmPropertyType.object,

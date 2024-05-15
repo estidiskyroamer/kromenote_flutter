@@ -19,7 +19,8 @@ class _DeleteCategoryDialogState extends State<DeleteCategoryDialog> {
   TextEditingController categoryController = TextEditingController();
 
   _DeleteCategoryDialogState() {
-    final config = Configuration.local([Note.schema, Category.schema]);
+    final config =
+        Configuration.local([Note.schema, Category.schema], schemaVersion: 1);
     realm = Realm(config);
   }
 
@@ -87,8 +88,8 @@ class _DeleteCategoryDialogState extends State<DeleteCategoryDialog> {
                         context: context,
                         builder: (BuildContext context) {
                           return StyledDialog(
+                            type: DialogType.warning,
                             title: "Delete category",
-                            color: HexColor("#ffcaac"),
                             actionText: "Delete",
                             cancelText: "Cancel",
                             dialogText:

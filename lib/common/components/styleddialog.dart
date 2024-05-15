@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:hexcolor/hexcolor.dart';
+import 'package:kromenote_flutter/common/components/blockshadowborder.dart';
 import 'package:kromenote_flutter/common/components/styledbutton.dart';
 
+enum DialogType { info, warning, update }
+
 class StyledDialog extends StatelessWidget {
-  final Color color;
+  final DialogType type;
   final String title;
   final String actionText;
   final String cancelText;
@@ -12,7 +16,7 @@ class StyledDialog extends StatelessWidget {
 
   const StyledDialog(
       {super.key,
-      required this.color,
+      required this.type,
       required this.title,
       required this.actionText,
       required this.cancelText,
@@ -22,14 +26,22 @@ class StyledDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Color color = Colors.white;
+    switch (type) {
+      case DialogType.info:
+        color = HexColor('#a8d5ff');
+        break;
+      case DialogType.update:
+        color = HexColor('#a9ffa8');
+        break;
+      case DialogType.warning:
+        color = HexColor('#ffa8a8');
+        break;
+      default:
+    }
     return AlertDialog(
-      backgroundColor: color,
-      shape: const Border(
-        top: BorderSide(width: 2.0, color: Colors.black),
-        left: BorderSide(width: 2.0, color: Colors.black),
-        right: BorderSide(width: 2.0, color: Colors.black),
-        bottom: BorderSide(width: 4.0, color: Colors.black),
-      ),
+      backgroundColor: Colors.white,
+      shape: blockShadowBorder(6.0),
       actions: [
         TextButton(onPressed: cancelCallback, child: Text(cancelText)),
         StyledButton(

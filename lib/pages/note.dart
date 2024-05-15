@@ -27,7 +27,8 @@ class NoteScreen extends StatefulWidget {
 
 class _NoteScreenState extends State<NoteScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
-  final config = Configuration.local([Note.schema, Category.schema]);
+  final config =
+      Configuration.local([Note.schema, Category.schema], schemaVersion: 1);
   late Realm realm;
   final _debouncer = Debouncer();
   Note? _currentNote;
@@ -37,7 +38,8 @@ class _NoteScreenState extends State<NoteScreen> {
   bool isChanged = false;
 
   _NoteScreenState() {
-    final config = Configuration.local([Note.schema, Category.schema]);
+    final config =
+        Configuration.local([Note.schema, Category.schema], schemaVersion: 1);
     realm = Realm(config);
   }
 
@@ -76,6 +78,7 @@ class _NoteScreenState extends State<NoteScreen> {
         if (_currentNote != null) {
           note = Note(_currentNote!.id, title,
               content: content,
+              category: _currentNote!.category,
               createdAt: _currentNote!.createdAt,
               updatedAt: DateTime.now());
         }
@@ -184,6 +187,7 @@ class _NoteScreenState extends State<NoteScreen> {
                   context: context,
                   builder: (BuildContext context) {
                     return StyledDialog(
+                      type: DialogType.warning,
                       title: "Unsaved changes",
                       actionCallback: () {
                         Navigator.pop(context);
@@ -194,7 +198,6 @@ class _NoteScreenState extends State<NoteScreen> {
                       },
                       actionText: "Continue editing",
                       cancelText: "Leave",
-                      color: HexColor("#ffcaac"),
                       dialogText:
                           "Are you sure you want to leave? Unsaved changes will be lost.",
                     );
@@ -245,6 +248,7 @@ class _NoteScreenState extends State<NoteScreen> {
               ),
               child: TextField(
                 controller: titleController,
+                style: const TextStyle(fontSize: 24),
                 decoration: const InputDecoration(
                     hintText: "Title goes here", border: InputBorder.none),
               ),
@@ -256,10 +260,14 @@ class _NoteScreenState extends State<NoteScreen> {
                   margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                   child: _currentNote != null && _currentNote!.updatedAt != null
                       ? Text(
-                          "Updated at ${DateFormat('dd MMM yyyy, HH:mm:ss').format(_currentNote!.updatedAt!)}")
+                          "Updated at ${DateFormat('dd MMM yyyy, HH:mm:ss').format(_currentNote!.updatedAt!)}",
+                          style: const TextStyle(fontSize: 12),
+                        )
                       : _currentNote != null && _currentNote!.createdAt != null
                           ? Text(
-                              "Created at ${DateFormat('dd MMM yyyy, HH:mm:ss').format(_currentNote!.createdAt!)}")
+                              "Created at ${DateFormat('dd MMM yyyy, HH:mm:ss').format(_currentNote!.createdAt!)}",
+                              style: const TextStyle(fontSize: 12),
+                            )
                           : Container(),
                 ),
               ],
@@ -352,7 +360,7 @@ class _NoteScreenState extends State<NoteScreen> {
                             },
                             actionText: "Remove",
                             cancelText: "Cancel",
-                            color: HexColor("#ffcaac"),
+                            type: DialogType.warning,
                             dialogText:
                                 "Are you sure you want to remove the category?",
                           );
@@ -373,7 +381,7 @@ class _NoteScreenState extends State<NoteScreen> {
                   builder: (BuildContext context) {
                     return StyledDialog(
                       title: "Delete note",
-                      color: HexColor("#ffcaac"),
+                      type: DialogType.warning,
                       actionText: "Delete",
                       cancelText: "Cancel",
                       dialogText: "Are you sure you want to delete this note?",

@@ -20,6 +20,7 @@ class _Note {
 
   late String title;
   late String? content;
+  late String? password;
   late DateTime? updatedAt;
   late DateTime? createdAt;
   late _Category? category;

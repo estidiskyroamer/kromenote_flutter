@@ -17,37 +17,24 @@ class AddCategoryDialog extends StatefulWidget {
 
 class _AddCategoryDialogState extends State<AddCategoryDialog> {
   List<String> colorList = [
-    // Very Light
-    "#FFE5B4", // Light Peach
-    "#FFFACD", // Light Lemon
-    "#F0F8FF", // Alice Blue
-    "#F5F5F5", // White Smoke
-    "#E6E6FA", // Light Lavender
-    "#E0FFFF", // Light Cyan
-
-    // Pastel
-    "#FFDAB9", // Pastel Peach
-    "#FFFFE0", // Pastel Yellow
-    "#B0E0E6", // Pastel Powder Blue
-    "#D8BFD8", // Pastel Thistle
-    "#98FB98", // Pastel Mint Green
-    "#AFEEEE", // Pastel Turquoise
-
-    // Pale
-    "#FFE4B5", // Pale Moccasin
-    "#FFFFE0", // Pale Yellow
-    "#E6E6FA", // Pale Lavender
-    "#DB7093", // Pale Violet Red
-    "#98FB98", // Pale Green
-    "#D3D3D3", // Pale Light Gray
-
-    // Vibrant
-    "#FF69B4", // Hot Pink
-    "#FFA500", // Orange
-    "#FFD700", // Gold
-    "#00FF00", // Lime
-    "#00BFFF", // Deep Sky Blue
-    "#FF0000" // Red
+    '#ffffff',
+    '#e2ffe2',
+    '#e2f1ff',
+    '#eee0ff',
+    '#ffe2e2',
+    '#fff4d9',
+    '#cdcdcd',
+    '#a9ffa8',
+    '#a8d5ff',
+    '#cba3ff',
+    '#ffa8a8',
+    '#ffdf8c',
+    '#acacac',
+    '#70ff6e',
+    '#6eb9ff',
+    '#a966ff',
+    '#ff6e6e',
+    '#ffc93f'
   ];
   String selectedColor = '#ffffff';
 
@@ -55,7 +42,8 @@ class _AddCategoryDialogState extends State<AddCategoryDialog> {
   TextEditingController categoryController = TextEditingController();
 
   _AddCategoryDialogState() {
-    final config = Configuration.local([Note.schema, Category.schema]);
+    final config =
+        Configuration.local([Note.schema, Category.schema], schemaVersion: 1);
     realm = Realm(config);
   }
 
@@ -117,7 +105,7 @@ class _AddCategoryDialogState extends State<AddCategoryDialog> {
           ),
           SizedBox(
             width: MediaQuery.of(context).size.width,
-            height: MediaQuery.of(context).size.height / 2,
+            height: MediaQuery.of(context).size.height / 4,
             child: GridView.builder(
                 physics: const NeverScrollableScrollPhysics(),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(

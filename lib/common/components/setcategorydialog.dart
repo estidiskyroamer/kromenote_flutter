@@ -20,7 +20,8 @@ class _SetCategoryDialogState extends State<SetCategoryDialog> {
   TextEditingController categoryController = TextEditingController();
 
   _SetCategoryDialogState() {
-    final config = Configuration.local([Note.schema, Category.schema]);
+    final config =
+        Configuration.local([Note.schema, Category.schema], schemaVersion: 1);
     realm = Realm(config);
   }
 
