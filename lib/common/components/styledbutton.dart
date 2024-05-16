@@ -10,6 +10,7 @@ class StyledButton extends StatelessWidget {
   final Color buttonColor;
   final Color textColor;
   final VoidCallback onPressed;
+  final bool isDisabled;
 
   StyledButton({
     super.key,
@@ -19,6 +20,7 @@ class StyledButton extends StatelessWidget {
     required this.buttonColor,
     this.textColor = Colors.black,
     required this.onPressed,
+    this.isDisabled = false,
   })  : assert(icon != null || text != null,
             'At least one of icon or text must be provided'),
         assert(icon != null || text!.isNotEmpty,
@@ -28,25 +30,29 @@ class StyledButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
+    return Opacity(
+      opacity: !isDisabled ? 1.0 : 0.35,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
           border: blockShadowBorder(6.0),
-          color: buttonColor),
-      child: TextButton(
-        onPressed: onPressed,
-        child: icon != null
-            ? FaIcon(
-                icon!,
-                size: size,
-                color: textColor,
-              )
-            : text != null
-                ? Text(
-                    text!,
-                    style: TextStyle(color: textColor),
-                  )
-                : const Text(""),
+          color: buttonColor,
+        ),
+        child: TextButton(
+          onPressed: !isDisabled ? onPressed : null,
+          child: icon != null
+              ? FaIcon(
+                  icon!,
+                  size: size,
+                  color: textColor,
+                )
+              : text != null
+                  ? Text(
+                      text!,
+                      style: TextStyle(color: textColor),
+                    )
+                  : const Text(""),
+        ),
       ),
     );
   }

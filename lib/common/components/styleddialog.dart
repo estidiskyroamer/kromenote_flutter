@@ -8,19 +8,21 @@ enum DialogType { info, warning, update }
 class StyledDialog extends StatelessWidget {
   final DialogType type;
   final String title;
+  Widget? content;
   final String actionText;
   final String cancelText;
-  final String dialogText;
+  String? dialogText;
   final VoidCallback cancelCallback;
   final VoidCallback actionCallback;
 
-  const StyledDialog(
+  StyledDialog(
       {super.key,
       required this.type,
       required this.title,
+      this.content,
       required this.actionText,
       required this.cancelText,
-      required this.dialogText,
+      this.dialogText,
       required this.cancelCallback,
       required this.actionCallback});
 
@@ -47,7 +49,7 @@ class StyledDialog extends StatelessWidget {
         StyledButton(
             buttonColor: color, onPressed: actionCallback, text: actionText),
       ],
-      content: Text(dialogText),
+      content: content ?? Text(dialogText!),
       title: Text(title),
     );
   }

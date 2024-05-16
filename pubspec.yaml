@@ -36,6 +36,7 @@ dependencies:
   fleather: ^1.14.5+1
   realm: ^2.2.1
   flutter_debouncer: ^2.0.0
+  crypto: ^3.0.3
   intl: ^0.18.0
 
 

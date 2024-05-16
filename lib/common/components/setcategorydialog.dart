@@ -92,7 +92,7 @@ class _SetCategoryDialogState extends State<SetCategoryDialog> {
                     },
                     child: Container(
                       padding: const EdgeInsets.all(12),
-                      margin: const EdgeInsets.only(bottom: 16),
+                      margin: const EdgeInsets.only(bottom: 12),
                       decoration: BoxDecoration(
                         color: HexColor(category.color),
                         borderRadius: BorderRadius.circular(10),

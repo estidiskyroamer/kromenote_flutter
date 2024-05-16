@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:hexcolor/hexcolor.dart';
@@ -6,6 +9,8 @@ import 'package:kromenote_flutter/common/components/addcategorydialog.dart';
 import 'package:kromenote_flutter/common/components/blockshadowborder.dart';
 import 'package:kromenote_flutter/common/components/deletecategorydialog.dart';
 import 'package:kromenote_flutter/common/components/styledbutton.dart';
+import 'package:kromenote_flutter/common/components/styleddialog.dart';
+import 'package:kromenote_flutter/common/components/styledtextfield.dart';
 import 'package:kromenote_flutter/database/models/models.dart';
 import 'package:kromenote_flutter/pages/note.dart';
 import 'package:mobkit_dashed_border/mobkit_dashed_border.dart';
@@ -30,6 +35,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   RealmResults<Note>? notes;
   RealmResults<Category>? categories;
+  Category? currentCategory;
+  TextEditingController passwordController = TextEditingController();
 
   @override
   void initState() {
@@ -48,6 +55,25 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       categories = realm.all<Category>();
     });
+  }
+
+  void getCategory(Category selectedCategory) {
+    setState(() {
+      if (currentCategory != null) {
+        currentCategory = null;
+        getNotes();
+      } else {
+        currentCategory = realm.find<Category>(selectedCategory.id);
+        notes = currentCategory!.getBacklinks<Note>('category');
+      }
+    });
+    print(currentCategory);
+  }
+
+  void handleInputPassword(Note note, VoidCallback callback) {
+    var bytes = utf8.encode(passwordController.text);
+    var hashedPassword = sha256.convert(bytes).toString();
+    note.password == hashedPassword ? callback() : print('wrong password');
   }
 
   @override
@@ -88,9 +114,17 @@ class _HomeScreenState extends State<HomeScreen> {
                         return Padding(
                           padding: const EdgeInsets.only(right: 6.0),
                           child: StyledButton(
-                              buttonColor: HexColor(category.color),
-                              text: category.name,
-                              onPressed: () {}),
+                            isDisabled: currentCategory == null
+                                ? false
+                                : currentCategory == category
+                                    ? false
+                                    : true,
+                            buttonColor: HexColor(category.color),
+                            text: category.name,
+                            onPressed: () {
+                              getCategory(category);
+                            },
+                          ),
                         );
                       }),
                 ),
@@ -104,40 +138,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     itemCount: notes!.length,
                     itemBuilder: (context, i) {
                       var note = notes!.elementAt(i);
-                      return GestureDetector(
-                        onTap: () async {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => NoteScreen(
-                                existingNoteId: note.id,
-                              ),
-                            ),
-                          );
-                          getNotes();
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          margin: const EdgeInsets.only(bottom: 12),
-                          decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10),
-                              border: blockShadowBorder(4.0),
-                              color: note.category != null
-                                  ? HexColor(note.category!.color)
-                                  : Colors.white),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(note.title),
-                              note.updatedAt != null
-                                  ? Text(DateFormat('dd MMM yyyy, HH:mm')
-                                      .format(note.updatedAt!))
-                                  : Text(DateFormat('dd MMM yyyy, HH:mm')
-                                      .format(note.createdAt!))
-                            ],
-                          ),
-                        ),
-                      );
+                      return noteItem(note, context);
                     }),
           ),
         ],
@@ -155,6 +156,94 @@ class _HomeScreenState extends State<HomeScreen> {
           );
           getNotes();
         },
+      ),
+    );
+  }
+
+  GestureDetector noteItem(Note note, BuildContext context) {
+    return GestureDetector(
+      onTap: () async {
+        note.password != null
+            ? showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return StyledDialog(
+                    type: DialogType.update,
+                    title: "Enter Password",
+                    actionText: "Enter",
+                    cancelText: "Cancel",
+                    dialogText: "test",
+                    content: styledTextField(
+                        passwordController, "Input password",
+                        isPassword: true,
+                        inputType: TextInputType.visiblePassword),
+                    cancelCallback: () {
+                      passwordController.clear();
+                      Navigator.pop(context);
+                    },
+                    actionCallback: () async {
+                      Navigator.pop(context);
+                      handleInputPassword(
+                        note,
+                        () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => NoteScreen(
+                                existingNoteId: note.id,
+                              ),
+                            ),
+                          );
+                        },
+                      );
+
+                      passwordController.clear();
+                    },
+                  );
+                },
+              )
+            : await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => NoteScreen(
+                    existingNoteId: note.id,
+                  ),
+                ),
+              );
+        getNotes();
+      },
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: blockShadowBorder(4.0),
+            color: note.category != null
+                ? HexColor(note.category!.color)
+                : Colors.white),
+        child: Row(
+          mainAxisSize: MainAxisSize.max,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(note.title),
+                note.updatedAt != null
+                    ? Text(DateFormat('dd MMM yyyy, HH:mm')
+                        .format(note.updatedAt!))
+                    : Text(DateFormat('dd MMM yyyy, HH:mm')
+                        .format(note.createdAt!))
+              ],
+            ),
+            note.password != null
+                ? Icon(
+                    FontAwesomeIcons.lock,
+                    color: Colors.black.withOpacity(0.35),
+                  )
+                : const SizedBox()
+          ],
+        ),
       ),
     );
   }
