@@ -3,21 +3,22 @@ import 'dart:developer';
 
 import 'package:crypto/crypto.dart';
 import 'package:fleather/fleather.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_debouncer/flutter_debouncer.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:hexcolor/hexcolor.dart';
 import 'package:intl/intl.dart';
+import 'package:kromenote_flutter/common/components/blockshadowborder.dart';
 import 'package:kromenote_flutter/common/components/editortoolbar.dart';
 import 'package:kromenote_flutter/common/components/setcategorydialog.dart';
 import 'package:kromenote_flutter/common/components/styledbutton.dart';
 import 'package:kromenote_flutter/common/components/styleddialog.dart';
 import 'package:kromenote_flutter/common/components/styledtextfield.dart';
+import 'package:kromenote_flutter/common/components/styledtoast.dart';
 import 'package:kromenote_flutter/database/models/models.dart';
 import 'package:kromenote_flutter/pages/home.dart';
-import 'package:mobkit_dashed_border/mobkit_dashed_border.dart';
 import 'package:realm/realm.dart';
+import 'package:toastification/toastification.dart';
 
 class NoteScreen extends StatefulWidget {
   // final Note? existingNote;
@@ -36,9 +37,13 @@ class _NoteScreenState extends State<NoteScreen> {
   late Realm realm;
   final _debouncer = Debouncer();
   Note? _currentNote;
+  RealmResults<Category>? categories;
+  Category? selectedCategory;
+
   TextEditingController titleController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
   FleatherController contentController = FleatherController();
+
   String themeColor = '#ffffff';
   bool isChanged = false;
 
@@ -87,10 +92,10 @@ class _NoteScreenState extends State<NoteScreen> {
               createdAt: _currentNote!.createdAt,
               updatedAt: DateTime.now());
         }
-
         realm.write(
           () {
             realm.add<Note>(note, update: true);
+            styledToast(ToastificationType.success, "Note saved");
             if (mounted) {
               setState(() {
                 _currentNote = note;
@@ -105,6 +110,7 @@ class _NoteScreenState extends State<NoteScreen> {
 
   void handleDeleteNote() {
     realm.write(() {
+      styledToast(ToastificationType.success, "Note deleted");
       realm.delete<Note>(_currentNote!);
       Navigator.pushReplacement(
           context,
@@ -123,6 +129,7 @@ class _NoteScreenState extends State<NoteScreen> {
       _debouncer.debounce(
         duration: duration,
         onDebounce: () {
+          styledToast(ToastificationType.info, "Password set");
           Navigator.of(context).pop();
         },
       );
@@ -135,13 +142,31 @@ class _NoteScreenState extends State<NoteScreen> {
     realm.write(() {
       if (_currentNote!.password == hashedPassword) {
         _currentNote!.password = null;
-      } else
-        print('wrong password');
+      } else {
+        styledToast(ToastificationType.error, "Wrong password");
+      }
       setState(() {});
       const duration = Duration(milliseconds: 250);
       _debouncer.debounce(
         duration: duration,
         onDebounce: () {
+          styledToast(ToastificationType.info, "Password removed");
+          Navigator.of(context).pop();
+        },
+      );
+    });
+  }
+
+  void handleSetCategory(Category currentCategory) {
+    realm.write(() {
+      _currentNote!.category = currentCategory;
+      _currentNote!.updatedAt = DateTime.now();
+      setState(() {});
+      const duration = Duration(milliseconds: 250);
+      _debouncer.debounce(
+        duration: duration,
+        onDebounce: () {
+          styledToast(ToastificationType.info, "Category changed");
           Navigator.of(context).pop();
         },
       );
@@ -177,6 +202,12 @@ class _NoteScreenState extends State<NoteScreen> {
     }
   }
 
+  void getCategories() async {
+    setState(() {
+      categories = realm.all<Category>();
+    });
+  }
+
   ParchmentDocument loadDocument(String document) {
     return ParchmentDocument.fromJson(jsonDecode(document));
   }
@@ -185,6 +216,7 @@ class _NoteScreenState extends State<NoteScreen> {
   void initState() {
     super.initState();
     handleGetNote();
+    getCategories();
 
     contentController.addListener(checkChangedState);
     titleController.addListener(checkChangedState);
@@ -217,7 +249,7 @@ class _NoteScreenState extends State<NoteScreen> {
           ),
           title: StyledButton(
             icon: FontAwesomeIcons.arrowLeft,
-            buttonColor: HexColor("#d9d9d9"),
+            buttonColor: HexColor(themeColor),
             onPressed: () {
               if (isChanged) {
                 showDialog(
@@ -263,7 +295,7 @@ class _NoteScreenState extends State<NoteScreen> {
                     padding: const EdgeInsets.only(right: 16),
                     child: StyledButton(
                       icon: FontAwesomeIcons.wrench,
-                      buttonColor: HexColor("#d9d9d9"),
+                      buttonColor: HexColor(themeColor),
                       onPressed: () {
                         _scaffoldKey.currentState!.openEndDrawer();
                       },
@@ -276,7 +308,8 @@ class _NoteScreenState extends State<NoteScreen> {
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            styledTextField(titleController, "Title goes here", fontSize: 24),
+            styledTextField(titleController, "Title goes here",
+                fontSize: 24, weight: FontWeight.bold),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -404,13 +437,67 @@ class _NoteScreenState extends State<NoteScreen> {
               onTap: () {
                 _scaffoldKey.currentState!.closeEndDrawer();
                 showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return SetCategoryDialog(
-                          existingNoteId: _currentNote!.id);
-                    }).then((value) => setState(() {
-                      themeColor = _currentNote!.category!.color;
-                    }));
+                  context: context,
+                  builder: (BuildContext context) {
+                    return StyledDialog(
+                        type: DialogType.update,
+                        title: "Set category",
+                        actionText: "Set",
+                        cancelText: "Cancel",
+                        content: SizedBox(
+                          width: MediaQuery.of(context).size.width,
+                          height: MediaQuery.of(context).size.height / 2,
+                          child: ListView.builder(
+                              shrinkWrap: true,
+                              itemCount: categories!.length,
+                              itemBuilder: (context, i) {
+                                var category = categories!.elementAt(i);
+                                return GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      handleSetCategory(category);
+                                    });
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    margin: const EdgeInsets.only(bottom: 12),
+                                    decoration: BoxDecoration(
+                                      color: HexColor(category.color),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: blockShadowBorder(4.0),
+                                    ),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(category.name),
+                                        selectedCategory != null &&
+                                                selectedCategory!.name ==
+                                                    category.name
+                                            ? const Icon(FontAwesomeIcons.check)
+                                            : const SizedBox()
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }),
+                        ),
+                        cancelCallback: () {
+                          Navigator.pop(context);
+                        },
+                        actionCallback: selectedCategory != null
+                            ? () {
+                                handleSetCategory(selectedCategory!);
+                              }
+                            : () {});
+                  },
+                ).then(
+                  (value) => setState(() {
+                    themeColor = _currentNote!.category!.color;
+                  }),
+                );
               },
               title: _currentNote != null && _currentNote!.category != null
                   ? Text(
@@ -439,9 +526,7 @@ class _NoteScreenState extends State<NoteScreen> {
                                 "Are you sure you want to remove the category?"),
                           );
                         },
-                      ).then((value) => setState(() {
-                            themeColor = "#ffffff";
-                          }));
+                      ).then((value) => setState(() {}));
                     },
                     title: const Text("Remove category"),
                   )

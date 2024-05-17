@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kromenote_flutter/pages/home.dart';
+import 'package:toastification/toastification.dart';
 
 void main() async {
   runApp(const MyApp());
@@ -11,9 +12,12 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      theme: ThemeData(useMaterial3: true, canvasColor: Colors.white),
-      home: const HomeScreen(),
+    return ToastificationWrapper(
+      child: MaterialApp(
+        theme: ThemeData(
+            useMaterial3: true, canvasColor: Colors.white, fontFamily: "Wix"),
+        home: const HomeScreen(),
+      ),
     );
   }
 }

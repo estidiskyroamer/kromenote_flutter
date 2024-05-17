@@ -33,6 +33,7 @@ dependencies:
   font_awesome_flutter: ^10.7.0
   hexcolor: ^3.0.1
   mobkit_dashed_border: ^0.0.6
+  toastification: ^2.0.0
   fleather: ^1.14.5+1
   realm: ^2.2.1
   flutter_debouncer: ^2.0.0
@@ -96,3 +97,7 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
+  fonts:
+    - family: Wix
+      fonts:
+        - asset: assets/fonts/Wix.ttf

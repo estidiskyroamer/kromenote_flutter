@@ -10,6 +10,7 @@ class StyledButton extends StatelessWidget {
   final Color buttonColor;
   final Color textColor;
   final VoidCallback onPressed;
+  final VoidCallback? onLongPress;
   final bool isDisabled;
 
   StyledButton({
@@ -20,6 +21,7 @@ class StyledButton extends StatelessWidget {
     required this.buttonColor,
     this.textColor = Colors.black,
     required this.onPressed,
+    this.onLongPress,
     this.isDisabled = false,
   })  : assert(icon != null || text != null,
             'At least one of icon or text must be provided'),
@@ -40,6 +42,7 @@ class StyledButton extends StatelessWidget {
         ),
         child: TextButton(
           onPressed: !isDisabled ? onPressed : null,
+          onLongPress: !isDisabled ? onLongPress : null,
           child: icon != null
               ? FaIcon(
                   icon!,

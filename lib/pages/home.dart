@@ -1,20 +1,25 @@
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_debouncer/flutter_debouncer.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:hexcolor/hexcolor.dart';
 import 'package:intl/intl.dart';
 import 'package:kromenote_flutter/common/components/addcategorydialog.dart';
 import 'package:kromenote_flutter/common/components/blockshadowborder.dart';
+import 'package:kromenote_flutter/common/components/bottomsheet.dart';
 import 'package:kromenote_flutter/common/components/deletecategorydialog.dart';
 import 'package:kromenote_flutter/common/components/styledbutton.dart';
 import 'package:kromenote_flutter/common/components/styleddialog.dart';
 import 'package:kromenote_flutter/common/components/styledtextfield.dart';
+import 'package:kromenote_flutter/common/components/styledtoast.dart';
 import 'package:kromenote_flutter/database/models/models.dart';
 import 'package:kromenote_flutter/pages/note.dart';
 import 'package:mobkit_dashed_border/mobkit_dashed_border.dart';
 import 'package:realm/realm.dart';
+import 'package:toastification/toastification.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -36,6 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
   RealmResults<Note>? notes;
   RealmResults<Category>? categories;
   Category? currentCategory;
+  final _debouncer = Debouncer();
   TextEditingController passwordController = TextEditingController();
 
   @override
@@ -67,13 +73,29 @@ class _HomeScreenState extends State<HomeScreen> {
         notes = currentCategory!.getBacklinks<Note>('category');
       }
     });
-    print(currentCategory);
+  }
+
+  void handleDeleteCategory(Category currentCategory) {
+    realm.write(() {
+      realm.delete<Category>(currentCategory);
+      const duration = Duration(milliseconds: 250);
+      _debouncer.debounce(
+        duration: duration,
+        onDebounce: () {
+          setState(() {});
+          Navigator.of(context).pop();
+        },
+      );
+    });
   }
 
   void handleInputPassword(Note note, VoidCallback callback) {
     var bytes = utf8.encode(passwordController.text);
     var hashedPassword = sha256.convert(bytes).toString();
-    note.password == hashedPassword ? callback() : print('wrong password');
+    note.password == hashedPassword
+        ? callback()
+        : styledToast(ToastificationType.error, "Wrong password");
+    ;
   }
 
   @override
@@ -124,6 +146,56 @@ class _HomeScreenState extends State<HomeScreen> {
                             onPressed: () {
                               getCategory(category);
                             },
+                            onLongPress: () {
+                              showModalBottomSheet(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return bottomSheet(
+                                    Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        ListTile(
+                                          leading: const Icon(
+                                              FontAwesomeIcons.pencil),
+                                          onTap: () {
+                                            Navigator.pop(context);
+                                          },
+                                          title: const Text("Edit category"),
+                                        ),
+                                        ListTile(
+                                          leading: const Icon(
+                                              FontAwesomeIcons.trashCan),
+                                          onTap: () {
+                                            Navigator.pop(context);
+                                            showDialog(
+                                              context: context,
+                                              builder: (BuildContext context) {
+                                                return StyledDialog(
+                                                  type: DialogType.warning,
+                                                  title: "Delete category",
+                                                  actionText: "Delete",
+                                                  cancelText: "Cancel",
+                                                  dialogText:
+                                                      "Are you sure you want to delete this category? Any notes in this category will become uncategorized.",
+                                                  cancelCallback: () {
+                                                    Navigator.pop(context);
+                                                  },
+                                                  actionCallback: () {
+                                                    handleDeleteCategory(
+                                                        category);
+                                                  },
+                                                );
+                                              },
+                                            ).then((value) => setState(() {}));
+                                          },
+                                          title: const Text("Delete category"),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              );
+                            },
                           ),
                         );
                       }),
@@ -131,7 +203,10 @@ class _HomeScreenState extends State<HomeScreen> {
           SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: notes!.isEmpty
-                ? const Text("No notes")
+                ? const Text(
+                    "No notes.\nClick the blue button below to add new notes.",
+                    textAlign: TextAlign.center,
+                  )
                 : ListView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
@@ -185,8 +260,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       Navigator.pop(context);
                       handleInputPassword(
                         note,
-                        () {
-                          Navigator.push(
+                        () async {
+                          await Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) => NoteScreen(
@@ -194,9 +269,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                           );
+                          getNotes();
                         },
                       );
-
                       passwordController.clear();
                     },
                   );
@@ -225,16 +300,32 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisSize: MainAxisSize.max,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(note.title),
-                note.updatedAt != null
-                    ? Text(DateFormat('dd MMM yyyy, HH:mm')
-                        .format(note.updatedAt!))
-                    : Text(DateFormat('dd MMM yyyy, HH:mm')
-                        .format(note.createdAt!))
-              ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    note.title,
+                    style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        overflow: TextOverflow.ellipsis),
+                  ),
+                  note.updatedAt != null
+                      ? Text(
+                          "Updated at ${DateFormat('dd MMM yyyy, HH:mm').format(note.updatedAt!)}",
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.black.withOpacity(0.5)),
+                        )
+                      : Text(
+                          "Created at ${DateFormat('dd MMM yyyy, HH:mm').format(note.createdAt!)}",
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.black.withOpacity(0.5)),
+                        ),
+                ],
+              ),
             ),
             note.password != null
                 ? Icon(

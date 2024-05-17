@@ -4,7 +4,8 @@ import 'package:mobkit_dashed_border/mobkit_dashed_border.dart';
 Container styledTextField(TextEditingController textController, String hintText,
     {bool isPassword = false,
     TextInputType inputType = TextInputType.text,
-    double fontSize = 16}) {
+    double fontSize = 16,
+    FontWeight weight = FontWeight.normal}) {
   return Container(
     margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
     decoration: const BoxDecoration(
@@ -15,7 +16,7 @@ Container styledTextField(TextEditingController textController, String hintText,
       obscureText: isPassword,
       keyboardType: inputType,
       controller: textController,
-      style: TextStyle(fontSize: fontSize),
+      style: TextStyle(fontSize: fontSize, fontWeight: weight),
       decoration: InputDecoration(hintText: hintText, border: InputBorder.none),
     ),
   );
