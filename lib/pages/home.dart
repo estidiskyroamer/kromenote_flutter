@@ -11,6 +11,7 @@ import 'package:kromenote_flutter/common/components/addcategorydialog.dart';
 import 'package:kromenote_flutter/common/components/blockshadowborder.dart';
 import 'package:kromenote_flutter/common/components/bottomsheet.dart';
 import 'package:kromenote_flutter/common/components/deletecategorydialog.dart';
+import 'package:kromenote_flutter/common/components/privacypolicydialog.dart';
 import 'package:kromenote_flutter/common/components/styledbutton.dart';
 import 'package:kromenote_flutter/common/components/styleddialog.dart';
 import 'package:kromenote_flutter/common/components/styledtextfield.dart';
@@ -128,94 +129,99 @@ class _HomeScreenState extends State<HomeScreen> {
                   height: 48,
                   margin: const EdgeInsets.fromLTRB(16, 16, 0, 16),
                   child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
+                    scrollDirection: Axis.horizontal,
+                    shrinkWrap: true,
+                    itemCount: categories!.length,
+                    itemBuilder: (context, i) {
+                      var category = categories!.elementAt(i);
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 6.0),
+                        child: StyledButton(
+                          isDisabled: currentCategory == null
+                              ? false
+                              : currentCategory == category
+                                  ? false
+                                  : true,
+                          buttonColor: HexColor(category.color),
+                          text: category.name,
+                          onPressed: () {
+                            getCategory(category);
+                          },
+                          onLongPress: () {
+                            showModalBottomSheet(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return bottomSheet(
+                                  Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      ListTile(
+                                        leading:
+                                            const Icon(FontAwesomeIcons.pencil),
+                                        onTap: () {
+                                          Navigator.pop(context);
+                                        },
+                                        title: const Text("Edit category"),
+                                      ),
+                                      ListTile(
+                                        leading: const Icon(
+                                            FontAwesomeIcons.trashCan),
+                                        onTap: () {
+                                          Navigator.pop(context);
+                                          showDialog(
+                                            context: context,
+                                            builder: (BuildContext context) {
+                                              return StyledDialog(
+                                                type: DialogType.warning,
+                                                title: "Delete category",
+                                                actionText: "Delete",
+                                                cancelText: "Cancel",
+                                                dialogText:
+                                                    "Are you sure you want to delete this category? Any notes in this category will become uncategorized.",
+                                                cancelCallback: () {
+                                                  Navigator.pop(context);
+                                                },
+                                                actionCallback: () {
+                                                  handleDeleteCategory(
+                                                      category);
+                                                },
+                                              );
+                                            },
+                                          ).then((value) => setState(() {}));
+                                        },
+                                        title: const Text("Delete category"),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ),
+          notes!.isEmpty
+              ? Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  child: const Text(
+                    "No notes.",
+                    textAlign: TextAlign.center,
+                  ),
+                )
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: ListView.builder(
                       shrinkWrap: true,
-                      itemCount: categories!.length,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: notes!.length,
                       itemBuilder: (context, i) {
-                        var category = categories!.elementAt(i);
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 6.0),
-                          child: StyledButton(
-                            isDisabled: currentCategory == null
-                                ? false
-                                : currentCategory == category
-                                    ? false
-                                    : true,
-                            buttonColor: HexColor(category.color),
-                            text: category.name,
-                            onPressed: () {
-                              getCategory(category);
-                            },
-                            onLongPress: () {
-                              showModalBottomSheet(
-                                context: context,
-                                builder: (BuildContext context) {
-                                  return bottomSheet(
-                                    Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        ListTile(
-                                          leading: const Icon(
-                                              FontAwesomeIcons.pencil),
-                                          onTap: () {
-                                            Navigator.pop(context);
-                                          },
-                                          title: const Text("Edit category"),
-                                        ),
-                                        ListTile(
-                                          leading: const Icon(
-                                              FontAwesomeIcons.trashCan),
-                                          onTap: () {
-                                            Navigator.pop(context);
-                                            showDialog(
-                                              context: context,
-                                              builder: (BuildContext context) {
-                                                return StyledDialog(
-                                                  type: DialogType.warning,
-                                                  title: "Delete category",
-                                                  actionText: "Delete",
-                                                  cancelText: "Cancel",
-                                                  dialogText:
-                                                      "Are you sure you want to delete this category? Any notes in this category will become uncategorized.",
-                                                  cancelCallback: () {
-                                                    Navigator.pop(context);
-                                                  },
-                                                  actionCallback: () {
-                                                    handleDeleteCategory(
-                                                        category);
-                                                  },
-                                                );
-                                              },
-                                            ).then((value) => setState(() {}));
-                                          },
-                                          title: const Text("Delete category"),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
-                              );
-                            },
-                          ),
-                        );
+                        var note = notes!.elementAt(i);
+                        return noteItem(note, context);
                       }),
                 ),
-          SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: notes!.isEmpty
-                ? const Text(
-                    "No notes.\nClick the blue button below to add new notes.",
-                    textAlign: TextAlign.center,
-                  )
-                : ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: notes!.length,
-                    itemBuilder: (context, i) {
-                      var note = notes!.elementAt(i);
-                      return noteItem(note, context);
-                    }),
-          ),
         ],
       ),
       floatingActionButton: StyledButton(
@@ -392,7 +398,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
             const Padding(padding: EdgeInsets.all(12)),
             ListTile(
-              onTap: () {},
+              onTap: () {
+                _scaffoldKey.currentState!.closeDrawer();
+                showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return const PrivacyPolicyDialog();
+                    });
+              },
               title: const Text("Privacy policy"),
             ),
           ],

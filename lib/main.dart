@@ -14,6 +14,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return ToastificationWrapper(
       child: MaterialApp(
+        debugShowCheckedModeBanner: false,
         theme: ThemeData(
             useMaterial3: true, canvasColor: Colors.white, fontFamily: "Wix"),
         home: const HomeScreen(),
